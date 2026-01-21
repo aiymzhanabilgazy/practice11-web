@@ -33,53 +33,12 @@ app.get('/', (req, res) => {
     <h1>Practice Task 10</h1>
     <ul>
       <li><a href="/api/products">/api/products</a></li>
+      <li><a href="/api/products/:id">/api/products:id</a></li>
       <li><a href="api/products?category=Electronics">/api/products?category=Electronics</a></li>
       <li><a href="api/products?minPrice=50&sort=price">/api/products?minPrice=50&sort=price</a></li>
       <li><a href="api/products?fields=name,price">/api/products?fields=name,price</a></li>
     </ul>
   `);
-});
-
-app.get('/api/products', async (req, res) => {
-  try {
-    const { category, minPrice, sort, fields } = req.query;
-    const filter = {};
-
-    if (category) {
-      filter.category = category;
-    }
-
-    if (minPrice) {
-      filter.price = { $gte: Number(minPrice) };
-    }
-
-    let projection = {};
-
-    if (fields) {
-      fields.split(',').forEach(field => {
-        projection[field] = 1;
-      });
-      projection._id = 0;
-    }
-
-    let sortOption = {};
-    if (sort === 'price') {
-      sortOption.price = 1;
-    }
-
-    const products = await productsCollection
-      .find(filter)
-      .project(projection)
-      .sort(sortOption)
-      .toArray();
-
-    res.json({
-      count: products.length,
-      products
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch products" });
-  }
 });
 
 
