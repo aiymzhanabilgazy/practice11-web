@@ -40,6 +40,37 @@ app.get('/', (req, res) => {
     </ul>
   `);
 });
+app.get('/api/products', async (req, res) => {
+  const {category, minPrice, sort, fields} = req.query;
+  const filter = {};
+  if(category) {
+    filter.category = category;
+  }
+  if(minPrice){
+    filter.price = { $gte: Number(minPrice) };
+  }
+  let projection = {};
+  if (fields) {
+    fields.split(',').forEach(field => {
+      projection[field] = 1;
+    });
+  }
+
+  let sortOption = {};
+  if (sort === 'price') {
+    sortOption.price = 1; 
+  }
+  const products = await productsCollection
+    .find(filter)
+    .project(projection)
+    .sort(sortOption)
+    .toArray();
+
+  res.json({
+    count: products.length,
+    products
+  });
+});
 
 
 app.get('/api/products/:id', async (req, res) => {
