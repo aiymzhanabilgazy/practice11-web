@@ -1,6 +1,9 @@
+require('dotenv').config();
+
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 //middlewares
 app.use(express.json());
@@ -9,8 +12,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const url =
-  "mongodb+srv://aiym123:aiym123@cluster0.wolwvj3.mongodb.net/web_app?retryWrites=true&w=majority";
+const url = process.env.MONGO_URI;
 const client = new MongoClient(url);
 
 let productsCollection;
@@ -82,6 +84,6 @@ app.use((req, res) => {
   res.status(404).json({ error: "API endpoint not found" });
 });
 //start the server
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
