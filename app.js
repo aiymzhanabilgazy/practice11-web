@@ -30,7 +30,7 @@ connectDB();
 //routes
 app.get('/', (req, res) => {
   res.send(`
-    <h1>Practice Task 10</h1>
+    <h1>Practice Task 11</h1>
     <ul>
       <li><a href="/api/products">/api/products</a></li>
       <li><a href="/api/products/:id">/api/products:id</a></li>
