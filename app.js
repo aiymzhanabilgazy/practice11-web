@@ -141,6 +141,13 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
+app.get('/version', (req, res) => {
+  res.json({
+    version: "1.1",
+    updatedAt: "2026-01-26"
+  });
+});
+
 
 //404 handler
 app.use((req, res) => {
