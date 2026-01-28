@@ -15,139 +15,130 @@ app.use((req, res, next) => {
 const url = process.env.MONGO_URI;
 const client = new MongoClient(url);
 
-let productsCollection;
+let itemsCollection;
 
 async function connectDB() {
+  try{
   await client.connect();
-  console.log("Connected to MongoDB");
-
   const db = client.db('shop');
-  productsCollection = db.collection('products');
+  itemsCollection = db.collection('items');
+  console.log("Connected to MongoDB");
+  }catch (err){
+    console.error(err);
+    process.exit(1);
+  } 
 }
-
 connectDB();
 
 //routes
 app.get('/', (req, res) => {
   res.send(`
-    <h1>Practice Task-11</h1>
+    <h1>Practice Task-13</h1>
     <ul>
-      <li><a href="/api/products">/api/products</a></li>
-      <li><a href="/api/products/:id">/api/products:id</a></li>
-      <li><a href="api/products?category=Electronics">/api/products?category=Electronics</a></li>
-      <li><a href="api/products?minPrice=50&sort=price">/api/products?minPrice=50&sort=price</a></li>
-      <li><a href="api/products?fields=name,price">/api/products?fields=name,price</a></li>
+      <li><a href="/api/items">GET/api/items</a></li>
+      <li><a href="/api/items/:id">GET/api/items:id</a></li>
+      <li><a href="/api/items">POST/api/items</a></li>
+      <li><a href="/api/items/:id">PUT/api/items:id</a></li>
+      <li><a href="/api/items/:id">PATCH/api/items:id</a></li>
+      <li><a href="/api/items">DELETE/api/items/:id</a></li>
     </ul>
   `);
 });
-app.get('/api/products', async (req, res) => {
-  const {category, minPrice, sort, fields} = req.query;
-  const filter = {};
-  if(category) {
-    filter.category = category;
+app.get('/api/items', async (req, res) => {
+  try {
+    const items = await itemsCollection.find().toArray();
+    res.status(200).json(items);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
   }
-  if(minPrice){
-    filter.price = { $gte: Number(minPrice) };
-  }
-  let projection = {};
-  if (fields) {
-    fields.split(',').forEach(field => {
-      projection[field] = 1;
-    });
-  }
-
-  let sortOption = {};
-  if (sort === 'price') {
-    sortOption.price = 1; 
-  }
-  const products = await productsCollection
-    .find(filter)
-    .project(projection)
-    .sort(sortOption)
-    .toArray();
-
-  res.json({
-    count: products.length,
-    products
-  });
 });
 
-
-app.get('/api/products/:id', async (req, res) => {
+app.get('/api/items/:id', async (req, res) => {
   try {
-    const product = await productsCollection.findOne({
+    const item = await itemsCollection.findOne({
       _id: new ObjectId(req.params.id)
     });
 
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' });
     }
 
-    res.json(product);
-  } catch (error) {
-    res.status(400).json({ error: "Invalid ID" });
+    res.status(200).json(item);
+  } catch (err) {
+    res.status(400).json({ message: 'Invalid ID' });
   }
 });
-
-app.post('/api/products', async (req, res) => {
-  const { name, price, category } = req.body;
-
-  if (!name || !price) {
-    return res.status(400).json({ error: "Name and price are required" });
-  }
-
-  const result = await productsCollection.insertOne({
-    name,
-    price,
-    category
-  });
-
-  res.status(201).json({
-    message: "Product created",
-    id: result.insertedId
-  });
-});
-
-app.put('/api/products/:id', async (req, res) => {
+app.post('/api/items', async (req, res) => {
   try {
-    const result = await productsCollection.updateOne(
+    const { name, price } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+
+    const result = await itemsCollection.insertOne({ name, price });
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+app.put('/api/items/:id', async (req, res) => {
+  try {
+    const { name, price } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+
+    const result = await itemsCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { name, price } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
+
+    res.status(200).json({ message: 'Item updated' });
+  } catch (err) {
+    res.status(400).json({ message: 'Invalid ID' });
+  }
+});
+
+app.patch('/api/items/:id', async (req, res) => {
+  try {
+    const result = await itemsCollection.updateOne(
       { _id: new ObjectId(req.params.id) },
       { $set: req.body }
     );
 
     if (result.matchedCount === 0) {
-      return res.status(404).json({ error: "Product not found" });
+      return res.status(404).json({ message: 'Item not found' });
     }
 
-    res.json({ message: "Product updated" });
-  } catch (error) {
-    res.status(400).json({ error: "Invalid ID" });
+    res.status(200).json({ message: 'Item updated partially' });
+  } catch (err) {
+    res.status(400).json({ message: 'Invalid ID' });
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/items/:id', async (req, res) => {
   try {
-    const result = await productsCollection.deleteOne({
+    const result = await itemsCollection.deleteOne({
       _id: new ObjectId(req.params.id)
     });
 
     if (result.deletedCount === 0) {
-      return res.status(404).json({ error: "Product not found" });
+      return res.status(404).json({ message: 'Item not found' });
     }
 
-    res.json({ message: "Product deleted" });
-  } catch (error) {
-    res.status(400).json({ error: "Invalid ID" });
+    res.status(204).end();
+  } catch (err) {
+    res.status(400).json({ message: 'Invalid ID' });
   }
 });
-
-app.get('/version', (req, res) => {
-  res.json({
-    version: "1.1",
-    updatedAt: "2026-01-26"
-  });
-});
-
 
 //404 handler
 app.use((req, res) => {
