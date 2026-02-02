@@ -16,8 +16,11 @@ app.use((req, res, next) => {
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers['authorization'];
 
-  if (!authHeader || authHeader !== 'Bearer practice-task-14') {
+  if (!authHeader) {
     return res.status(401).json({ message: 'Unauthorized' });
+  }
+  if (authHeader !== 'Bearer practice-task-14'){
+    return res.status(403).json({message:'Forbidden'});
   }
 
   next();
